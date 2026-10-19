@@ -7,6 +7,7 @@ import cz.tradeflow.orders.dto.CreateOrderRequest;
 import cz.tradeflow.orders.dto.OrderResponse;
 import cz.tradeflow.orders.entity.Order;
 import cz.tradeflow.orders.entity.OrderItem;
+import cz.tradeflow.orders.exception.OrderNotFoundException;
 import cz.tradeflow.orders.mapper.OrderMapper;
 import cz.tradeflow.orders.repository.OrderRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,8 +43,17 @@ public class OrderService {
             order.addItem(item);
         }
 
-        return orderMapper.toResponse(orderRepository.save(order));
+        Order savedOrder = orderRepository.save(order);
+        return orderMapper.toResponse(savedOrder);
     }
 
+    @Transactional(readOnly = true)
+    public OrderResponse getOrder(Long orderId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        return orderMapper.toResponse(order);
+    }
 
     }

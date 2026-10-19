@@ -1,5 +1,6 @@
 package cz.tradeflow.orders.catalog;
 
+import cz.tradeflow.orders.exception.ProductNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -31,9 +32,7 @@ public class StubProductCatalog implements ProductCatalog {
         ProductInfo product = PRODUCTS.get(productId);
 
         if (product == null) {
-            throw new IllegalArgumentException(
-                    "Product not found: " + productId
-            );
+            throw new ProductNotFoundException(productId);
         }
 
         return product;
