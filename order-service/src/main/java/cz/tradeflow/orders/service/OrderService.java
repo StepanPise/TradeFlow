@@ -1,0 +1,49 @@
+package cz.tradeflow.orders.service;
+
+import cz.tradeflow.orders.catalog.ProductCatalog;
+import cz.tradeflow.orders.catalog.ProductInfo;
+import cz.tradeflow.orders.dto.CreateOrderItemRequest;
+import cz.tradeflow.orders.dto.CreateOrderRequest;
+import cz.tradeflow.orders.dto.OrderResponse;
+import cz.tradeflow.orders.entity.Order;
+import cz.tradeflow.orders.entity.OrderItem;
+import cz.tradeflow.orders.mapper.OrderMapper;
+import cz.tradeflow.orders.repository.OrderRepository;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class OrderService {
+
+    private final OrderRepository orderRepository;
+    private final OrderMapper orderMapper;
+    private final ProductCatalog productCatalog;
+
+    @Transactional
+    public OrderResponse createOrder(CreateOrderRequest request) {
+
+        Order order = new Order();
+
+        for (CreateOrderItemRequest itemRequest : request.items()){
+
+            ProductInfo product = productCatalog.getProduct(
+                    itemRequest.productId()
+            );
+
+            OrderItem item = new OrderItem(
+                    product.id(),
+                    product.name(),
+                    itemRequest.quantity(),
+                    product.price()
+            );
+
+            order.addItem(item);
+        }
+
+        return orderMapper.toResponse(orderRepository.save(order));
+    }
+
+
+    }
