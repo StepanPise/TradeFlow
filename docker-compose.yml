@@ -4,12 +4,25 @@ services:
     container_name: tradeflow-order-db
     environment:
       POSTGRES_DB: order_db
-      POSTGRES_USER: ${ORDER_DB_USER}
-      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD}
+      POSTGRES_USER: tradeflow
+      POSTGRES_PASSWORD: tradeflow_dev
     ports:
       - "5433:5432"
     volumes:
       - order-db-data:/var/lib/postgresql/data
 
+  inventory-db:
+    image: postgres:16-alpine
+    container_name: tradeflow-inventory-db
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: tradeflow
+      POSTGRES_PASSWORD: tradeflow_dev
+    ports:
+      - "5434:5432"
+    volumes:
+      - inventory-db-data:/var/lib/postgresql/data
+
 volumes:
   order-db-data:
+  inventory-db-data:

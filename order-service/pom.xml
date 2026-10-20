@@ -11,8 +11,8 @@
     <groupId>cz.tradeflow</groupId>
     <artifactId>order-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>TradeFlow</name>
-    <description>TradeFlow</description>
+    <name>order-service</name>
+    <description>Order management microservice for TradeFlow</description>
     <url/>
     <licenses>
         <license/>
