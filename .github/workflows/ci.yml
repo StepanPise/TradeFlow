@@ -23,3 +23,22 @@ jobs:
 
       - name: Build and run tests
         run: mvn -B -f order-service/pom.xml verify
+
+  inventory-service:
+    name: Inventory Service Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: inventory-service/pom.xml
+
+      - name: Build and run tests
+        run: mvn -B -f inventory-service/pom.xml verify
