@@ -7,6 +7,8 @@ import cz.tradeflow.orders.dto.CreateOrderRequest;
 import cz.tradeflow.orders.dto.OrderResponse;
 import cz.tradeflow.orders.entity.Order;
 import cz.tradeflow.orders.entity.OrderItem;
+import cz.tradeflow.orders.event.OrderCreatedEvent;
+import cz.tradeflow.orders.event.OrderEventPublisher;
 import cz.tradeflow.orders.exception.OrderNotFoundException;
 import cz.tradeflow.orders.mapper.OrderMapper;
 import cz.tradeflow.orders.repository.OrderRepository;
@@ -21,6 +23,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
     private final ProductCatalog productCatalog;
+    private final OrderEventPublisher orderEventPublisher;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -43,8 +46,23 @@ public class OrderService {
             order.addItem(item);
         }
 
+
         Order savedOrder = orderRepository.save(order);
+
+        OrderCreatedEvent event = new OrderCreatedEvent(
+                savedOrder.getId(),
+                savedOrder.getItems().stream()
+                        .map(item -> new OrderCreatedEvent.OrderCreatedItem(
+                                item.getProductId(),
+                                item.getQuantity()
+                        ))
+                        .toList()
+        );
+
+        orderEventPublisher.publishOrderCreated(event);
+
         return orderMapper.toResponse(savedOrder);
+
     }
 
     @Transactional(readOnly = true)

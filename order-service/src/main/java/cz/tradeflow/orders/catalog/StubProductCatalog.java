@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.Map;
 
-@Component
+//@Component
 public class StubProductCatalog implements ProductCatalog {
 
     private static final Map<Long, ProductInfo> PRODUCTS = Map.of(

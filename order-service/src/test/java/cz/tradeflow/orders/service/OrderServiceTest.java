@@ -8,6 +8,7 @@ import cz.tradeflow.orders.dto.OrderResponse;
 import cz.tradeflow.orders.entity.Order;
 import cz.tradeflow.orders.entity.OrderItem;
 import cz.tradeflow.orders.entity.enums.OrderStatus;
+import cz.tradeflow.orders.event.OrderEventPublisher;
 import cz.tradeflow.orders.exception.OrderNotFoundException;
 import cz.tradeflow.orders.exception.ProductNotFoundException;
 import cz.tradeflow.orders.mapper.OrderMapper;
@@ -37,6 +38,9 @@ class OrderServiceTest {
     @Mock
     private ProductCatalog productCatalog;
 
+    @Mock
+    private OrderEventPublisher orderEventPublisher;
+
     private final OrderMapper orderMapper = new OrderMapper();
 
     private OrderService orderService;
@@ -46,7 +50,8 @@ class OrderServiceTest {
         orderService = new OrderService(
                 orderRepository,
                 orderMapper,
-                productCatalog
+                productCatalog,
+                orderEventPublisher
         );
     }
 
