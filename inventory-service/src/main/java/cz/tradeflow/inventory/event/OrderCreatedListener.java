@@ -1,4 +1,3 @@
-
 package cz.tradeflow.inventory.event;
 
 import lombok.extern.slf4j.Slf4j;

@@ -25,4 +25,13 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(ex.getMessage());
     }
+
+    @ExceptionHandler(InventoryUnavailableException.class)
+    public ResponseEntity<String> handleInventoryUnavailable(
+            InventoryUnavailableException ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ex.getMessage());
+    }
 }
