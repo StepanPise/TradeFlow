@@ -11,10 +11,13 @@ import cz.tradeflow.orders.event.OrderCreatedEvent;
 import cz.tradeflow.orders.event.OrderEventPublisher;
 import cz.tradeflow.orders.exception.OrderNotFoundException;
 import cz.tradeflow.orders.mapper.OrderMapper;
+import cz.tradeflow.orders.outbox.OutboxEvent;
+import cz.tradeflow.orders.outbox.OutboxEventRepository;
 import cz.tradeflow.orders.repository.OrderRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,8 @@ public class OrderService {
     private final OrderMapper orderMapper;
     private final ProductCatalog productCatalog;
     private final OrderEventPublisher orderEventPublisher;
+    private final OutboxEventRepository outboxEventRepository;
+    private final JsonMapper jsonMapper;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -46,7 +51,6 @@ public class OrderService {
             order.addItem(item);
         }
 
-
         Order savedOrder = orderRepository.save(order);
 
         OrderCreatedEvent event = new OrderCreatedEvent(
@@ -59,10 +63,17 @@ public class OrderService {
                         .toList()
         );
 
-        orderEventPublisher.publishOrderCreated(event);
+        String payload = jsonMapper.writeValueAsString(event);
+
+        OutboxEvent outboxEvent = new OutboxEvent(
+                "orders.created",
+                savedOrder.getId().toString(),
+                payload
+        );
+
+        outboxEventRepository.save(outboxEvent);
 
         return orderMapper.toResponse(savedOrder);
-
     }
 
     @Transactional(readOnly = true)
