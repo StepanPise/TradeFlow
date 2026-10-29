@@ -8,7 +8,6 @@ import cz.tradeflow.orders.dto.OrderResponse;
 import cz.tradeflow.orders.entity.Order;
 import cz.tradeflow.orders.entity.OrderItem;
 import cz.tradeflow.orders.event.OrderCreatedEvent;
-import cz.tradeflow.orders.event.OrderEventPublisher;
 import cz.tradeflow.orders.exception.OrderNotFoundException;
 import cz.tradeflow.orders.mapper.OrderMapper;
 import cz.tradeflow.orders.outbox.OutboxEvent;
@@ -26,7 +25,6 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
     private final ProductCatalog productCatalog;
-    private final OrderEventPublisher orderEventPublisher;
     private final OutboxEventRepository outboxEventRepository;
     private final JsonMapper jsonMapper;
 

@@ -8,10 +8,12 @@ import cz.tradeflow.orders.dto.OrderResponse;
 import cz.tradeflow.orders.entity.Order;
 import cz.tradeflow.orders.entity.OrderItem;
 import cz.tradeflow.orders.entity.enums.OrderStatus;
-import cz.tradeflow.orders.event.OrderEventPublisher;
+import cz.tradeflow.orders.event.OrderCreatedEvent;
 import cz.tradeflow.orders.exception.OrderNotFoundException;
 import cz.tradeflow.orders.exception.ProductNotFoundException;
 import cz.tradeflow.orders.mapper.OrderMapper;
+import cz.tradeflow.orders.outbox.OutboxEvent;
+import cz.tradeflow.orders.outbox.OutboxEventRepository;
 import cz.tradeflow.orders.repository.OrderRepository;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +22,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -39,9 +43,10 @@ class OrderServiceTest {
     private ProductCatalog productCatalog;
 
     @Mock
-    private OrderEventPublisher orderEventPublisher;
+    private OutboxEventRepository outboxEventRepository;
 
     private final OrderMapper orderMapper = new OrderMapper();
+    private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
     private OrderService orderService;
 
@@ -51,12 +56,13 @@ class OrderServiceTest {
                 orderRepository,
                 orderMapper,
                 productCatalog,
-                orderEventPublisher
+                outboxEventRepository,
+                jsonMapper
         );
     }
 
     @Test
-    void createOrder_shouldCreatePendingOrder() {
+    void createOrder_shouldCreatePendingOrderAndSaveOutboxEvent() {
 
         CreateOrderRequest request = new CreateOrderRequest(
                 List.of(new CreateOrderItemRequest(10L, 2))
@@ -72,12 +78,15 @@ class OrderServiceTest {
                 .thenReturn(product);
 
         when(orderRepository.save(any(Order.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
+                .thenAnswer(invocation -> {
+                    Order order = invocation.getArgument(0);
+                    ReflectionTestUtils.setField(order, "id", 42L);
+                    return order;
+                });
 
         OrderResponse response = orderService.createOrder(request);
 
-
+        assertEquals(42L, response.id());
         assertEquals(OrderStatus.PENDING, response.status());
         assertEquals(1, response.items().size());
 
@@ -101,6 +110,27 @@ class OrderServiceTest {
         assertEquals(1, savedOrder.getItems().size());
         assertSame(savedOrder, savedOrder.getItems().get(0).getOrder());
 
+        ArgumentCaptor<OutboxEvent> outboxCaptor =
+                ArgumentCaptor.forClass(OutboxEvent.class);
+
+        verify(outboxEventRepository).save(outboxCaptor.capture());
+
+        OutboxEvent outboxEvent = outboxCaptor.getValue();
+
+        assertEquals("orders.created", outboxEvent.getTopic());
+        assertEquals("42", outboxEvent.getMessageKey());
+        assertNull(outboxEvent.getPublishedAt());
+
+        OrderCreatedEvent event = jsonMapper.readValue(
+                outboxEvent.getPayload(),
+                OrderCreatedEvent.class
+        );
+
+        assertEquals(42L, event.orderId());
+        assertEquals(1, event.items().size());
+        assertEquals(10L, event.items().getFirst().productId());
+        assertEquals(2, event.items().getFirst().quantity());
+
         verify(productCatalog).getProduct(10L);
     }
 
@@ -120,6 +150,7 @@ class OrderServiceTest {
         );
 
         verify(orderRepository, never()).save(any(Order.class));
+        verifyNoInteractions(outboxEventRepository);
     }
 
     @Test
@@ -128,7 +159,6 @@ class OrderServiceTest {
         Long orderId = 1L;
 
         Order order = new Order();
-
         order.addItem(new OrderItem(
                 10L,
                 "Sony Headphones",

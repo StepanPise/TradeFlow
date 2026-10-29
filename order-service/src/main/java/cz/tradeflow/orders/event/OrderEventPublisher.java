@@ -1,35 +1,23 @@
 package cz.tradeflow.orders.event;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
-@Slf4j
+import java.util.concurrent.CompletableFuture;
+
 @Component
 @RequiredArgsConstructor
 public class OrderEventPublisher {
 
-    private final KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
-    public void publishOrderCreated(OrderCreatedEvent event) {
-        kafkaTemplate.send(
-                "orders.created",
-                event.orderId().toString(),
-                event
-        ).whenComplete((result, exception) -> {
-            if (exception != null) {
-                log.error(
-                        "Failed to publish OrderCreated for order {}",
-                        event.orderId(),
-                        exception
-                );
-            } else {
-                log.info(
-                        "Published OrderCreated for order {}",
-                        event.orderId()
-                );
-            }
-        });
+    public CompletableFuture<SendResult<String, String>> publish(
+            String topic,
+            String messageKey,
+            String payload
+    ) {
+        return kafkaTemplate.send(topic, messageKey, payload);
     }
 }
