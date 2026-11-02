@@ -1,18 +1,22 @@
 package cz.tradeflow.inventory.event;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
+import cz.tradeflow.inventory.service.ReservationService;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
+@RequiredArgsConstructor
 public class OrderCreatedListener {
+    private final JsonMapper jsonMapper;
+    private final ReservationService reservationService;
 
     @KafkaListener(
             topics = "orders.created",
             groupId = "inventory-service"
     )
     public void handleOrderCreated(String message) {
-        log.info("Received OrderCreated: {}", message);
+        reservationService.reserve(jsonMapper.readValue(message, OrderCreatedEvent.class));
     }
 }

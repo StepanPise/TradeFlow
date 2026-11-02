@@ -27,4 +27,11 @@ public class Product {
 
     @Column(nullable = false)
     private int stockQuantity;
+
+    public void reserve(int quantity) {
+        if (quantity <= 0 || quantity > stockQuantity) {
+            throw new IllegalArgumentException("Invalid reservation quantity");
+        }
+        stockQuantity -= quantity;
+    }
 }

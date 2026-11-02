@@ -1,0 +1,5 @@
+CREATE TABLE processed_orders (
+    order_id BIGINT PRIMARY KEY,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('RESERVED', 'REJECTED')),
+    processed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
