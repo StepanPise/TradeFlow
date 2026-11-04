@@ -7,7 +7,9 @@ import cz.tradeflow.orders.dto.CreateOrderRequest;
 import cz.tradeflow.orders.dto.OrderResponse;
 import cz.tradeflow.orders.entity.Order;
 import cz.tradeflow.orders.entity.OrderItem;
+import cz.tradeflow.orders.entity.enums.OrderStatus;
 import cz.tradeflow.orders.event.OrderCreatedEvent;
+import cz.tradeflow.orders.event.ReservationResultEvent;
 import cz.tradeflow.orders.exception.OrderNotFoundException;
 import cz.tradeflow.orders.mapper.OrderMapper;
 import cz.tradeflow.orders.outbox.OutboxEvent;
@@ -83,4 +85,36 @@ public class OrderService {
         return orderMapper.toResponse(order);
     }
 
+    @Transactional
+    public void applyReservationResult(ReservationResultEvent event) {
+
+        if (event == null || event.orderId() == null || event.status() == null) {
+            throw new IllegalArgumentException(
+                    "Reservation result must contain orderId and status"
+            );
+        }
+
+        OrderStatus targetStatus = switch (event.status()) {
+            case RESERVED -> OrderStatus.CONFIRMED;
+            case REJECTED -> OrderStatus.REJECTED;
+        };
+
+        Order order = orderRepository.findByIdForUpdate(event.orderId())
+                .orElseThrow(() -> new OrderNotFoundException(event.orderId()));
+
+        if (order.getStatus() == targetStatus) {
+            return;
+        }
+
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Cannot apply reservation result to order "
+                            + event.orderId()
+                            + " with status "
+                            + order.getStatus()
+            );
+        }
+
+        order.setStatus(targetStatus);
+    }
     }
